@@ -21,3 +21,13 @@ The SVG file loads in Inkscape. That's all the testing I've done.
 Only foreground color is supported.  Other ANSI escape sequences are ignored.
 
 Parsing is just a stupid regex.
+
+`ansi_enscript.py`
+
+This script converts ANSI color escape sequences to enscript escape sequences.
+
+This is another way to get ANSI-colored text to a printable format.
+
+Use the -e option to enscript to ask it to honor escape codes, e.g:
+
+`ls --color | ./ansi_enscript.py | enscript -e -f CourierBold10 -o ls.pdf`
