@@ -111,7 +111,7 @@ class AnsiSvg(object):
         ret = ''
 
         # Look for 'm' command
-        parse=re.split(r'\x1b\[([0-9]+);?([0-9]+)?m',line)
+        parse=re.split(r'\x1b\[([0-9]*);?([0-9]+)?m',line)
 
         while parse:
             ret += parse.pop(0)
@@ -119,27 +119,32 @@ class AnsiSvg(object):
             intensity = parse.pop(0)
             color = parse.pop(0)
 
-            if not intensity is None:
+            if not intensity:
+                intensity = 0
+            else:
                 intensity = int(intensity)
-            if not color is None:
+
+            if not color:
+                color = 0
+            else:
                 color = int(color)
 
             if self.ansicolor != (intensity,color):
-                if self.ansicolor != (0,None):
+                if self.ansicolor != (0,0):
                     ret += '</flowSpan>'
 
-                if (intensity,color) != (0,None):
+                if (intensity,color) != (0,0):
                     try:
                         ret += '<flowSpan style="fill:%s">'%colortab[(intensity,color)]
                     except KeyError:
-                        ret += '<flowSpan>'
+                        ret += '<flowSpan id="unknown_%s">'%repr((intensity,color))
 
                 self.ansicolor = intensity,color
 
-        if self.ansicolor != (0,None):
+        if self.ansicolor != (0,0):
             ret += '</flowSpan>'
 
-        self.ansicolor = (0,None)
+        self.ansicolor = (0,0)
 
         return ret
 
@@ -147,7 +152,7 @@ class AnsiSvg(object):
         self.outfd = outfd
         self.idct = 0
         print >> self.outfd, self.head
-        self.ansicolor = (0,None)
+        self.ansicolor = (0,0)
 
     def __call__(self, line):
         id_ = "line_%d"%self.idct
