@@ -111,23 +111,23 @@ class AnsiSvg(object):
         ret = ''
 
         # Look for 'm' command
-        parse=re.split(r'\x1b\[([0-9]*);?([0-9]+)?m',line)
+        parse=re.split(r'\x1b\[([0-9;]*)m',line)
 
         while parse:
             ret += parse.pop(0)
             if not parse: break
-            intensity = parse.pop(0)
-            color = parse.pop(0)
-
-            if not intensity:
-                intensity = 0
+            csr = parse.pop(0)
+            if not csr:
+                args = []
             else:
-                intensity = int(intensity)
+                args = map(int,csr.split(';'))
 
-            if not color:
-                color = 0
+            if len(args)==2:
+                intensity, color = args
+            elif len(args)==1:
+                intensity, color = [0]+args
             else:
-                color = int(color)
+                intensity, color = 0,0
 
             if self.ansicolor != (intensity,color):
                 if self.ansicolor != (0,0):
