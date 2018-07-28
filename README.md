@@ -23,6 +23,7 @@ Only foreground color is supported.  Other ANSI escape sequences are ignored.
 Parsing is just a stupid regex.
 
 `ansi_enscript.py`
+------------------
 
 This script converts ANSI color escape sequences to enscript escape sequences.
 

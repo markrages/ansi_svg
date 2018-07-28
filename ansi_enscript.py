@@ -72,7 +72,7 @@ class AnsiEnscript(object):
             code = parse.pop(0)
 
             if code=='m':
-                args = map(int,args.split(';'))
+                args = [int(a) for a in args.split(';') if a]
 
                 if not args:
                     args = [0]
