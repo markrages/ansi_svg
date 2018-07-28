@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 import re
 
@@ -120,7 +120,7 @@ class AnsiSvg(object):
             if not csr:
                 args = []
             else:
-                args = map(int,csr.split(';'))
+                args = [int(a) for a in csr.split(';') if a]
 
             if len(args)==2:
                 intensity, color = args
@@ -151,7 +151,7 @@ class AnsiSvg(object):
     def __init__(self, outfd):
         self.outfd = outfd
         self.idct = 0
-        print >> self.outfd, self.head
+        self._print(self.head)
         self.ansicolor = (0,0)
 
     def __call__(self, line):
@@ -159,13 +159,16 @@ class AnsiSvg(object):
 
         line = self.interp_ansi(line)
         self.idct += 1
-        print >> self.outfd, self.line%(id_,line)
+        self._print(self.line%(id_,line))
 
     def __enter__(self, *args):
         return self
 
     def __exit__(self, *args):
-        print >> self.outfd, self.tail
+        self._print(self.tail)
+
+    def _print(self, string):
+        self.outfd.write(string + '\n')
 
 import sys
 
