@@ -1,8 +1,13 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import re
+import sys
+from xml.sax.saxutils import escape
 
-def rgb(r,g,b): return "#%02x%02x%02x"%(r,g,b)
+
+def rgb(r, g, b):
+    return f"#{r:02x}{g:02x}{b:02x}"
+
 
 # These are PuTTY colors.
 # From https://en.wikipedia.org/wiki/ANSI_escape_code#Colors
@@ -11,27 +16,28 @@ br_on = 255
 br_off = 85
 norm_on = 187
 
-colortab = {(0,30):rgb( br_off, br_off, br_off), # black
-            (0,31):rgb(  br_on, br_off, br_off), # red
-            (0,32):rgb( br_off,  br_on, br_off), # green
-            (0,33):rgb(  br_on,  br_on, br_off), # yellow
-            (0,34):rgb( br_off, br_off,  br_on), # blue
-            (0,35):rgb(  br_on, br_off,  br_on), # magenta
-            (0,36):rgb( br_off,  br_on,  br_on), # cyan
-            (0,37):rgb(  br_on,  br_on,  br_on), # white
-            (1,30):rgb(      0,      0,      0), # black
-            (1,31):rgb(norm_on,      0,      0), # red
-            (1,32):rgb(      0,norm_on,      0), # green
-            (1,33):rgb(norm_on,norm_on,      0), # yellow
-            (1,34):rgb(      0,      0,norm_on), # blue
-            (1,35):rgb(norm_on,      0,norm_on), # magenta
-            (1,36):rgb(      0,norm_on,norm_on), # cyan
-            (1,37):rgb(norm_on,norm_on,norm_on)  # white
-            }
+colortab = {
+    (0, 30): rgb(br_off, br_off, br_off),  # black
+    (0, 31): rgb(br_on, br_off, br_off),  # red
+    (0, 32): rgb(br_off, br_on, br_off),  # green
+    (0, 33): rgb(br_on, br_on, br_off),  # yellow
+    (0, 34): rgb(br_off, br_off, br_on),  # blue
+    (0, 35): rgb(br_on, br_off, br_on),  # magenta
+    (0, 36): rgb(br_off, br_on, br_on),  # cyan
+    (0, 37): rgb(br_on, br_on, br_on),  # white
+    (1, 30): rgb(0, 0, 0),  # black
+    (1, 31): rgb(norm_on, 0, 0),  # red
+    (1, 32): rgb(0, norm_on, 0),  # green
+    (1, 33): rgb(norm_on, norm_on, 0),  # yellow
+    (1, 34): rgb(0, 0, norm_on),  # blue
+    (1, 35): rgb(norm_on, 0, norm_on),  # magenta
+    (1, 36): rgb(0, norm_on, norm_on),  # cyan
+    (1, 37): rgb(norm_on, norm_on, norm_on),  # white
+}
 
 
-class AnsiSvg(object):
-    head="""<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+class AnsiSvg:
+    head = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
@@ -99,52 +105,55 @@ class AnsiSvg(object):
          id="%s"
          style="-inkscape-font-specification:'Courier Bold';font-family:Courier;font-weight:bold;font-style:normal;font-stretch:normal;font-variant:normal">%s</flowPara>"""
 
-    color="""<flowSpan
+    color = """<flowSpan
    style="fill:#008000"
    id="flowSpan4138">asdfa</flowSpan>  asdf"""
 
-    tail="""</flowRoot>  </g>
+    tail = """</flowRoot>  </g>
 </svg>
 """
 
     def interp_ansi(self, line):
-        ret = ''
+        ret = ""
 
         # Look for 'm' command
-        parse=re.split(r'\x1b\[([0-9;]*)m',line)
+        parse = re.split(r"\x1b\[([0-9;]*)m", line)
 
         while parse:
-            ret += parse.pop(0)
-            if not parse: break
+            ret += escape(parse.pop(0))
+            if not parse:
+                break
             csr = parse.pop(0)
             if not csr:
                 args = []
             else:
-                args = [int(a) for a in csr.split(';') if a]
+                args = [int(a) for a in csr.split(";") if a]
 
-            if len(args)==2:
+            if len(args) == 2:
                 intensity, color = args
-            elif len(args)==1:
-                intensity, color = [0]+args
+            elif len(args) == 1:
+                intensity, color = [0] + args
             else:
-                intensity, color = 0,0
+                intensity, color = 0, 0
 
-            if self.ansicolor != (intensity,color):
-                if self.ansicolor != (0,0):
-                    ret += '</flowSpan>'
+            if self.ansicolor != (intensity, color):
+                if self.ansicolor != (0, 0):
+                    ret += "</flowSpan>"
 
-                if (intensity,color) != (0,0):
+                if (intensity, color) != (0, 0):
                     try:
-                        ret += '<flowSpan style="fill:%s">'%colortab[(intensity,color)]
+                        ret += f'<flowSpan style="fill:{colortab[(intensity, color)]}">'
                     except KeyError:
-                        ret += '<flowSpan id="unknown_%s">'%repr((intensity,color))
+                        ret += (
+                            f'<flowSpan id="unknown_{(intensity, color)!r}">'
+                        )
 
-                self.ansicolor = intensity,color
+                self.ansicolor = intensity, color
 
-        if self.ansicolor != (0,0):
-            ret += '</flowSpan>'
+        if self.ansicolor != (0, 0):
+            ret += "</flowSpan>"
 
-        self.ansicolor = (0,0)
+        self.ansicolor = (0, 0)
 
         return ret
 
@@ -152,14 +161,20 @@ class AnsiSvg(object):
         self.outfd = outfd
         self.idct = 0
         self._print(self.head)
-        self.ansicolor = (0,0)
+        self.ansicolor = (0, 0)
 
     def __call__(self, line):
-        id_ = "line_%d"%self.idct
+        id_ = f"line_{self.idct:d}"
 
         line = self.interp_ansi(line)
         self.idct += 1
-        self._print(self.line%(id_,line))
+        self._print(
+            self.line
+            % (
+                id_,
+                line,
+            )
+        )
 
     def __enter__(self, *args):
         return self
@@ -168,11 +183,10 @@ class AnsiSvg(object):
         self._print(self.tail)
 
     def _print(self, string):
-        self.outfd.write(string + '\n')
+        self.outfd.write(f"{string}\n")
 
-import sys
 
-if __name__=="__main__":
+if __name__ == "__main__":
     with AnsiSvg(sys.stdout) as as_:
-        for line in sys.stdin:
-            as_(line)
+        for stdinline in sys.stdin:
+            as_(stdinline)
