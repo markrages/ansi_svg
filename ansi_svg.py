@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import re
+from xml.sax.saxutils import escape
 
 def rgb(r,g,b): return "#%02x%02x%02x"%(r,g,b)
 
@@ -114,8 +115,9 @@ class AnsiSvg(object):
         parse=re.split(r'\x1b\[([0-9;]*)m',line)
 
         while parse:
-            ret += parse.pop(0)
+            ret += escape(parse.pop(0))
             if not parse: break
+
             csr = parse.pop(0)
             if not csr:
                 args = []
